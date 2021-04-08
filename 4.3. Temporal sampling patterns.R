@@ -1,4 +1,5 @@
 #### examining the temporal sampling patterns within real species occurrence datasets ####
+library(ggplot2)
 
 main <- 'D:\\Work Sch\\Phd\\Databases Occurrence\\GBIF Plant\\SEA (all angio)'
 setwd(main)
@@ -30,7 +31,6 @@ obs.bias.s <- obs.bias[obs.bias$species %in% species,]
 abs.freqbias <- as.data.frame(obs.bias.s$year[!is.na(obs.bias.s$year)])
 colnames(abs.freqbias) <- 'Var1'
 abs.freqbias$Var1 <- as.numeric(as.character(abs.freqbias$Var1))
-# abs.freqbias <- as.data.frame(abs.freqbias[abs.freqbias$Var1 %in% seq(1850,2010,1),])
 colnames(abs.freqbias) <- 'Var1'
 abs.bias <- as.data.frame(table(obs.bias.s$year))
 obs.bias.s <- as.data.frame(table(obs.bias.s[, c(1,5)]))
@@ -94,14 +94,13 @@ ggplot(scl.bias, aes(x=year, y=Freq, group = 1)) +
   geom_line() +
   scale_x_discrete(breaks = seq(1700, 2020, 10))
 
-abs.bias$Var1 <- as.numeric(as.character(abs.bias$Var1))
 ################ absolute temporal sampling bias to be examined ####
+abs.bias$Var1 <- as.numeric(as.character(abs.bias$Var1))
 write.csv(abs.bias, "abs.bias.csv")
 
 ggplot(abs.freqbias, aes(x=Var1)) +
   geom_freqpoly(bins = 66) +
   scale_x_continuous(breaks = seq(1770, 2010, 10)) +
-  # geom_vline(xintercept = c(1919, 1964, 1990), col = 'red')
   geom_vline(xintercept = c(1900, 2000), col = 'red')
 
 ggplot(raw.bias, aes(x=Var1, y=(Freq), group = 1)) +
@@ -112,29 +111,26 @@ sp.scl$year <- as.numeric(as.character(sp.scl$year))
 eg.sps$year <- as.numeric(as.character(eg.sps$year))
 write.csv(eg.sps, file = 'eg.sps.csv')
 
-#### example species with clear temporal sampling patterns ####
+#### example species with clear temporal sampling patterns ###############################################
 ## examples that were used in the main text Fig. 1
 eg.sp <- eg.sps[eg.sps$species %in% c("Cinnamomum parthenoxylon", "Croton tiglium", "Knema latifolia",
                                       "Ficus benguetensis", "Daphniphyllum glaucescens", "Cinnamomum verum"),]
 write.csv(eg.sp, "TSP example.csv", row.names = F)
 ggplot(eg.sp, aes(x=year, y=Freq, group = 1)) +
   geom_line() +
-  # geom_smooth(method='lm', formula= y~x, se = F, col = 'red') +
-  # geom_smooth(method = lm, formula = y ~ splines::bs(x, 3), se = F) +
-  # geom_smooth(method='gam', formula= y ~ s(x, bs = "cs"), se = F) +
   scale_x_continuous(breaks = seq(1900, 2000, 20), limits = c(1900,2000)) +
   facet_wrap(~species, scales = 'free_y')
 
 setwd('D:/OneDrive - National University of Singapore/0 TempBias/Temporal Sampling')
 write.csv(scl.bias[,c(1,3)], file = 'Obs_bias.csv')
 
-#### simulating the temporal sampling patterns to be used for the observer model ####
+#### simulating the temporal sampling patterns to be used for the observer model #########################
 ## temporal sampling function ##
 temporal.sampling <- function(freq.table = NULL, n = 100) {
   sort(sample(freq.table$year, replace = T, prob = freq.table$Freq, n))
 }
 
-## Creating Bias distribution ##
+## Creating Bias distribution ############################################################################
 temp.dir <- ('D:/OneDrive - National University of Singapore/0 TempBias/Temporal Sampling')
 setwd(temp.dir)
 ## Observed temporal distribution of samples
@@ -185,8 +181,11 @@ Hist$Freq <- 0
 Hist <- rbind(c(1900, 1),Hist)
 plot(Hist$Freq)
 write.csv(Hist, file = 'Bias_Hist.csv', row.names = F)
+
 #### sampling matrix ##
 bias.list <- c('ClusA', 'ClusT', 'ClusR', 'SlopA', 'SlopT', 'SlopR', 'Match', 'Hist')
+# Note: new names are in sequence, clustered past, clustered recent, clustered intermediate
+# spread past, spread recent, spread intermediate, only end, and only start
 bias.mat <- as.data.frame(matrix(NA, 100, 8))
 colnames(bias.mat) <- bias.list
 for (B in bias.list) {

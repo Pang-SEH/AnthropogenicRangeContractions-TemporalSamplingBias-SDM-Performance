@@ -131,10 +131,12 @@ closeAllConnections()
 
 ### note: there are some issues with running on maxnet
 # a convergence error consistently pops up that prevents the development of
-# some models.. The example error is below
+# some models.. An example of the error is below
+
 # Error in { : task 8 failed - "index larger than maximal 168"
+
 # The developers are still trying to resolve this error, but further testing concludes
 # that there is no effect on the final model
 # No distinct difference was noted between replicates that had this error and those that did not
-# when we used maxent.jar instead.
+# when  maxent.jar was used instead.
 # In summary, some models might fail, but excluding them out would have no effect on the results

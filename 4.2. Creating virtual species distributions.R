@@ -45,7 +45,7 @@ for (yr in years) {
   writeRaster(r.cont, paste('Lsuit_cont_', yr, '.tif', sep = ''), overwrite = T)
 }
 
-#### Creating Climatic Niches ####
+#### Creating Environmental Niches ####
 setwd(L.dir)
 setwd('EnvNicheObjects')
 obj.dir <- getwd()
@@ -60,7 +60,7 @@ registerDoParallel(cl)
 # important for realistic.sp = T, which sequentially creates specie response curves to prevent unrealistic species
 # i.e., no overlap between variables, see ?generateRandomSp for more detail
 foreach (num = 1:10000, .packages = 'virtualspecies') %dopar% {
-  Clim.N <- generateRandomSp(PCs, approach = 'response', 
+  Env.N <- generateRandomSp(PCs, approach = 'response', 
                              rescale = T, rescale.each.response = T,
                              realistic.sp = T, species.type = 'multiplicative',
                              niche.breadth = 'wide',
@@ -68,35 +68,27 @@ foreach (num = 1:10000, .packages = 'virtualspecies') %dopar% {
                              convert.to.PA = F, PA.method = 'probability', alpha = -0.1, adjust.alpha = F,
                              beta = 'probability', species.prevalence = NULL,
                              plot = T)
-  convertToPA(Clim.N, PA.method = 'threshold', beta = "random", alpha = -0.1)
+  convertToPA(Env.N, PA.method = 'threshold', beta = "random", alpha = -0.1)
   # setting limits to exclude extreme niches where almost all of SEA is suitable or unsuitable
   # this prevents an excessive amount of extreme niches which slows down later analyses
-  if (freq(Clim.N$suitab.raster >= 0.7)[2,2] > 1000 & freq(Clim.N$suitab.raster <= 0.3)[2,2] > 500) {
+  if (freq(Env.N$suitab.raster >= 0.7)[2,2] > 1000 & freq(Env.N$suitab.raster <= 0.3)[2,2] > 500) {
     setwd(obj.dir)
-    save(Clim.N, file = paste('niche', num, sep = ""))
+    save(Env.N, file = paste('niche', num, sep = ""))
     setwd(en.dir)
-    writeRaster(Clim.N$suitab.raster, filename = paste('niche', num, '.tif', sep = ''))
+    writeRaster(Env.N$suitab.raster, filename = paste('niche', num, '.tif', sep = ''))
     print(paste("Saved", "Niche", num))
   }
 }
 stopCluster(cl)
 
-#### Selecting Climatic Niches ####
+#### Selecting Environmental Niches ####
 setwd(en.dir)
 niches <- stack(list.files(pattern = 'niche'))
 library(usdm)
 cn_cor <- vifcor(niches, th = 0.85)
-cn_cor
 save(cn_cor, file = 'cn_cor')
 load('cn_cor')
 cn_cor <- as.character(cn_cor@results$Variables)
-length(cn_cor)
-plot(niches[[cn_cor[1:12]]])
-plot(niches[[cn_cor[13:24]]])
-plot(niches[[cn_cor[25:36]]])
-plot(niches[[cn_cor[37:48]]])
-plot(niches[[cn_cor[49:length(cn_cor)]]])
-freq(niches[[cn_cor[46]]])
 #### removing too narrow niches ####
 # second iteration of filtering out extreme niches (some had suitability bands of only a few pixels still)
 nl <- NA
@@ -118,7 +110,7 @@ for (i in cn_cor) {
 nl <- nl[2:length(nl)]
 save(nl, file = 'nl')
 load('nl')
-#### selected climatic niches #####
+#### selected environmental niches #####
 env.niches <- sample(nl, 100, replace = F) # randomly selected 100 environmental niches
 setwd(L.dir)
 setwd('EnvNiche')

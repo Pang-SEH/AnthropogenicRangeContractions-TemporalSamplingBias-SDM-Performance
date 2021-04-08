@@ -6,7 +6,7 @@ library(stringr)
 main <- 'D:/OneDrive - National University of Singapore/0 TempBias/'
 
 land.n <- paste(main, 'LandNiche/cont', sep = '')
-clim.n <- paste(main, 'ClimNiche', sep = '')
+env.n <- paste(main, 'EnvNiche', sep = '')
 setwd(paste(main, 'Env/pca', sep = ''))
 env <- stack('PCs_all.grd')
 
@@ -22,7 +22,7 @@ sp.stat <- read.csv('species statistics.csv', row.names = 1)
 sp.stat <- sp.stat[!grepl('P05|P65', sp.stat$Prev),]
 
 ### this function calculates 2D environmental niche overlaps for all
-# combination of environmental variables (5 PC-axes)
+### possible paired combination of environmental variables (5 PC-axes)
 Env.Niche.Overlap <- function(env, sp.range, sp.pts) {
   niche.d <- as.data.frame(stack(env, sp.range), na.rm = T)
   pt.d <- as.data.frame(extract(env, sp.pts[, c('Lon', 'Lat')]))
@@ -61,18 +61,18 @@ registerDoParallel(cl)
 Sys.time()
 foreach (i = 1:nrow(sp.stat), .packages = c('virtualspecies', 'ecospat', 'stringr')) %dopar% {
   TH <- sp.stat$Thrs[i] # specific threshold calculated before
-  N <- as.character(sp.stat$Clim.N[i]) # Env Niche
+  N <- as.character(sp.stat$Env.N[i]) # Env Niche
   P <- as.character(sp.stat$Prev[i]) # Prevalence level set
-  setwd(clim.n)
-  Clim.N <- raster(paste(N, '.tif', sep = '')) # pulling out Env Niche
+  setwd(env.n)
+  Env.N <- raster(paste(N, '.tif', sep = '')) # pulling out Env Niche
   setwd(land.n)
   Land.N <- raster(paste("Lsuit_cont_",1900,".tif", sep = ""))
-  historical <- convertToPA(Clim.N*Land.N,
+  historical <- convertToPA(Env.N*Land.N,
                             PA.method = 'threshold', plot = F,
                             beta = TH)
   
   # extracting the distribution changes over time for this species
-  dist.shf <- sp.dist[sp.dist$Clim.N == N & sp.dist$Prev == P, ]
+  dist.shf <- sp.dist[sp.dist$Env.N == N & sp.dist$Prev == P, ]
   
   setwd(sampling.dir) # listing out all samples of this species
   samp.list <- list.files(pattern = paste(N,P, sep = '.'))

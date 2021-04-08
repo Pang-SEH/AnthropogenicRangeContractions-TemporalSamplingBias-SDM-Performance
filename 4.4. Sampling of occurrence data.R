@@ -11,7 +11,7 @@ main <- 'D:/OneDrive - National University of Singapore/0 TempBias/'
 
 land.n.dir <- paste(main, 'LandNiche/cont', sep = '') # Land Suitability
 lc.dir <- paste(main, 'Env/LUH_sim', sep = '') # Land Cover Predictors (to get true values)
-clim.n.dir <- paste(main, 'ClimNiche', sep = '') # Env Suitability
+env.n.dir <- paste(main, 'EnvNiche', sep = '') # Env Suitability
 sampling.dir <- 'D:/S.Pang/0 TempBias/Samples' # Sampling directory (set local due to number of files)
 
 setwd(sampling.dir)
@@ -20,11 +20,13 @@ colnames(sp.stat) <- 'Name'
 sp.stat <- as.data.frame(str_split_fixed(sp.stat$Name, '[.]', 4)[,1:2]) # splitting for EnvNiche n Prev
 sp.stat <- unique(sp.stat)
 sp.stat[, 3:5] <- NA
-colnames(sp.stat) <- c('Clim.N', 'Prev', 'Thrs', 'D.1900', 'D.2000')
+colnames(sp.stat) <- c('Env.N', 'Prev', 'Thrs', 'D.1900', 'D.2000')
 head(sp.stat)
 
 bias <- c('CA', 'CT', 'CR', 'SA', 'ST', 'SR', 'MT', 'HT')
-clim.niche <- paste('N', seq(1, 100, 1), sep = '')
+# Note: new names are, in order above, clustered past, clustered recent, clustered intermediate
+# spread past, spread recent, spread intermediate, only end, and only start
+env.niche <- paste('N', seq(1, 100, 1), sep = '')
 prev.lvl <- c('P05', 'P10', 'P15', 'P25', 'P35', 'P50', 'P65')
 prev <- c(0.05, 0.10,0.15,0.25,0.35,0.50,0.65)
 # prevalence separated for inclusion in virtual species and for labelling
@@ -36,36 +38,36 @@ obj.prevalence <- function(obj){
   } else {
     return(0)
   }
-} # function to determine prevalence (binary)
+} # function to determine prevalence (binary distribution)
 
-for (N in clim.niche) {
+for (N in env.niche) {
   for (P in 1:length(prev)) {
     p <- prev[P] # number - small p
     P <- prev.lvl[P] # label - big P
     
     # getting species statistics, based on 1900 #
-    rn <- sp.stat$Clim.N == N & sp.stat$Prev == P # row number
-    setwd(clim.n.dir)
-    Clim.N <- raster(paste(N, '.tif', sep = '')) # Env Niche
+    rn <- sp.stat$Env.N == N & sp.stat$Prev == P # row number
+    setwd(env.n.dir)
+    Env.N <- raster(paste(N, '.tif', sep = '')) # Env Niche
     setwd(land.n.dir)
     ld <- raster(paste('Lsuit_cont_',1900,".tif", sep = "")) # historical distribution
-    PA <- convertToPA(Clim.N*ld,
+    PA <- convertToPA(Env.N*ld,
                       PA.method = 'probability', plot = F,
                       alpha = -0.01, species.prevalence = p)
     # Prevalence is used to determine threshold which is kept constant for the species
-    # Prevalence is set at historical
+    # Prevalence is set at historical 1900
     sp.beta <- as.numeric(PA$PA.conversion['beta']) # threshold
     sp.stat$Thrs[rn] <- sp.beta # storing threshold value
-    PA <- convertToPA(Clim.N*ld,
+    PA <- convertToPA(Env.N*ld,
                       PA.method = 'threshold', plot = F,
                       beta = sp.stat$Thrs[rn])
     # creating species presence absence based on threshold (consistency)
-    sp.stat$D.1900[rn] <- obj.prevalence(PA$pa.raster) # prevalence of species for 1500
+    sp.stat$D.1900[rn] <- obj.prevalence(PA$pa.raster) # prevalence of species for 1900
     
     
     # for 2000 #
     ld <- raster(paste('Lsuit_cont_',2000,".tif", sep = "")) # 2000 distribution
-    PA <- convertToPA(Clim.N*ld,
+    PA <- convertToPA(Env.N*ld,
                       PA.method = 'threshold', plot = F,
                       beta = sp.stat$Thrs[rn])
     sp.stat$D.2000[rn] <- obj.prevalence(PA$pa.raster)
@@ -90,7 +92,7 @@ alc <- stack(paste('Lsuit_cont_', 1900:2000, '.tif', sep = ''))
 names(alc) <- sub('Lsuit_cont_', 'L', names(alc))
 
 setwd(main)
-setwd('ClimNiche')
+setwd('EnvNiche')
 cn <- stack(paste('N', 1:100, '.tif', sep = ''))
 names(cn)
 
@@ -102,6 +104,8 @@ head(sp.stats)
 # different temporal sampling patterns to be used #
 bias <- c('CA', 'CT', 'CR', 'SA', 'ST', 'SR', 'MT', 'HT')
 bias.list <- c('ClusA', 'ClusT', 'ClusR', 'SlopA', 'SlopT', 'SlopR', 'Match', 'Hist')
+# Note: new names are in sequence, clustered past, clustered recent, clustered intermediate
+# spread past, spread recent, spread intermediate, only end, and only start
 temporal.sampling <- function(freq.table = NULL, n = 100) {
   sort(sample(freq.table$year, replace = T, prob = freq.table$Freq, n))
 }
@@ -143,7 +147,7 @@ foreach(S = 1:15, .packages = 'raster') %dopar% { # 15 replicates as some issues
     samp.PA <- samp.B[,c('x','y','Year')]
     for (N in paste('N', 1:100, sep = '')) {
       for (P in Prev) {
-        TH <- sp.stats[sp.stats$Clim.N == N & sp.stats$Prev == P, 'Thrs'] # threshold for binary data
+        TH <- sp.stats[sp.stats$Env.N == N & sp.stats$Prev == P, 'Thrs'] # threshold for binary data
         samp.P[, paste(N, P, sep = '.')] <- samp.B[, N]
         samp.P[, paste(N, P, sep = '.')][samp.P[, paste(N, P, sep = '.')] <= TH] <- 0
         samp.PA[, paste(N, P, sep = '.')] <- rbinom(nrow(samp.P), 1, samp.P[, paste(N, P, sep = '.')])

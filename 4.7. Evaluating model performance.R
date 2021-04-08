@@ -4,7 +4,7 @@ library(PresenceAbsence)
 main <- 'D:/OneDrive - National University of Singapore/0 TempBias/'
 main.l <- 'D:/S.Pang/0 TempBias/'
 
-clim.n <- paste(main, 'ClimNiche', sep = '') # environmental niche
+env.n <- paste(main, 'EnvNiche', sep = '') # environmental niche
 land.n <- paste(main, 'LandNiche/cont', sep = '') # land use suitability
 sp.stat <- read.csv(paste(main, 'Results/species statistics.csv', sep = '')) # thresholds for sp
 sp.stat <- sp.stat[!grepl('P05|P65', sp.stat$Prev),] # thresholds to examine removing previously included prevalences
@@ -94,19 +94,19 @@ for (L in land.format) {
   # for each land cover map format as either cont or cate
   foreach (i = 1:nrow(sp.stat), .packages = c('virtualspecies', 'biomod2', 'PresenceAbsence')) %dopar% {
     TH <- sp.stat$Thrs[i] # binary range threshold
-    N <- sp.stat$Clim.N[i] # virtual species environmental niche
+    N <- sp.stat$Env.N[i] # virtual species environmental niche
     P <- sp.stat$Prev[i] # prevalence
-    setwd(clim.n)
-    Clim.N <- raster(paste(N, '.tif', sep = ''))
+    setwd(env.n)
+    Env.N <- raster(paste(N, '.tif', sep = ''))
     setwd(land.n) # land cover suitability, NOT FORMAT
     Land.N <- raster(paste("Lsuit_cont_",2000,".tif", sep = ""))
     # actual is land use for 2000, contemporary/end
-    actual <- convertToPA(Clim.N*Land.N,
+    actual <- convertToPA(Env.N*Land.N,
                           PA.method = 'threshold', plot = F,
                           beta = TH)
     Land.N <- raster(paste("Lsuit_cont_",1900,".tif", sep = ""))
     # historical is land use for 1900, historical/start
-    historical <- convertToPA(Clim.N*Land.N,
+    historical <- convertToPA(Env.N*Land.N,
                               PA.method = 'threshold', plot = F,
                               beta = TH)
     
